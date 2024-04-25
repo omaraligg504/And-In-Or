@@ -174,7 +174,7 @@ exports.resizeProductPhoto=catchAsync (async (req,res,next)=>{
   messege:'photos updated successfully'
   })
 })  
-
+//sadklasd
 
 exports.addProductAttribute=catchAsync(async (req,res,next)=>{
     const {client}=req; 
