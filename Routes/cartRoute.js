@@ -5,6 +5,7 @@ const authController = require("./../Controllers/authController");
 
 router
 .get('/getMyCart',authController.protected,authController.restrictedto('user'),cartController.getMyCart)
+.get('/getMyCartItems',authController.protected,authController.restrictedto('user'),cartController.getMyCartItems)
 .post('/addCart',authController.protected,authController.restrictedto('user'),cartController.addCart)
 .post('/addCartItem',authController.protected,authController.restrictedto('user'),cartController.addCartItem)
 

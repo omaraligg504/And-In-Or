@@ -38,8 +38,11 @@ module.exports=fn=>{
                     case '42701':
                         errorMessage = 'Two or more columns have the same name.';
                         break;
+                    case 'P0001':
+                        errorMessage='DataBase error: there is no availabe items in the stock ';
+                        break;
                     default:
-                        errorMessage = 'An error occurred while processing your request.';
+                        errorMessage = 'An error occurred while processing your request. '+err.code+' '+err;
                         break;
                 }
                 next(new AppError(errorMessage,400))

@@ -28,16 +28,15 @@ exports.addProductCategory = catchAsync(async (req, res, next) => {
 
 exports.addProduct = catchAsync(async (req, res, next) => {
   const { client } = req;
-  const sql = `insert into product (name,product_description,model_height,model_wearing,care_instructions,about,product_category_id,brand_id) values ($1,$2,$3,$4,$5,$6,$7,$8)`;
+  const sql = `insert into product (name,product_description,care_instructions,about,product_category_id,brand_id,reviews) values ($1,$2,$3,$4,$5,$6,$7)`;
   const {
     name,
     product_description,
-    model_height,
-    model_wearing,
-    care_instruction,
+    care_instructions,
     about,
     product_category_id,
     brand_id,
+    reviews
   } = req.body;
   const validation= handlerFactory.missing('product ',[{name:'name',value:name},{name:'product description',value:product_description},{name:'product category',value:product_category_id},{name:'about',value:about},{name:'brand',value:brand_id}])
   if(validation.length!==0){return next(new AppError(validation,401))}
@@ -45,12 +44,11 @@ exports.addProduct = catchAsync(async (req, res, next) => {
     await client.query(sql, [
       name,
       product_description,
-      model_height,
-      model_wearing,
-      care_instruction,
+      care_instructions,
       about,
       product_category_id,
       brand_id,
+      reviews
     ])
   ).rows[0];
   await client.query("COMMIT");
@@ -61,9 +59,9 @@ exports.addProduct = catchAsync(async (req, res, next) => {
 });
 exports.addProductItem = catchAsync(async (req, res, next) => {
   const { client } = req;
-  const sql = `insert into product_item (product_id,color_id,original_price,code,sale_price) values($1,$2,$3,$4,$5)`;
-  const { product_id, color_id, original_price, code, sale_price } = req.body;
-  const validation= handlerFactory.missing('product item ',[{name:'product id',value:product_id},{name:'original price',value:original_price},{name:'code',value:code}])
+  const sql = `insert into product_item (product_id,color_id,original_price,code,sale_price,size_id,quantity_in_stock,model_wearing) values($1,$2,$3,$4,$5,$6,$7,$8) returning id`;
+  const { product_id, color_id, original_price, code, sale_price,size_id,quantity_in_stock ,model_wearing} = req.body;
+  const validation= handlerFactory.missing('product item ',[{name:'product id',value:product_id},{name:'original price',value:original_price},{name:'code',value:code},{name:'size id',value:size_id},{name:'quantity in the stock',value:quantity_in_stock}])
   if(validation.length!==0){return next(new AppError(validation,401))}
   const productItem = (
     await client.query(sql, [
@@ -72,29 +70,32 @@ exports.addProductItem = catchAsync(async (req, res, next) => {
       original_price,
       code,
       sale_price,
+      size_id,
+      quantity_in_stock,
+      model_wearing
     ])
   ).rows[0];
   await client.query("COMMIT");
   res.status(200).json({
     status: "success",
-    productItem,
+    productItem
   });
 });
-exports.addProductVariation = catchAsync(async (req, res, next) => {
-  const { client } = req;
-  const sql = `insert into product_variation (product_item_id ,size_id,quantity_in_stock) values($1,$2,$3)`;
-  const { product_item, size_id, quantity_in_stock } = req.body;
-  const validation= handlerFactory.missing('product variation ',[{name:'product item',value:product_item},{name:'quantity in stock',value:quantity_in_stock}])
-  if(validation.length!==0){return next(new AppError(validation,401))}
-  const product_variation = (
-    await client.query(sql, [product_item, size_id, quantity_in_stock])
-  ).rows[0];
-  await client.query('COMMIT')
-  res.status(200).json({
-    status: "success",
-    product_variation,
-  });
-});
+// exports.addProductVariation = catchAsync(async (req, res, next) => {
+//   const { client } = req;
+//   const sql = `insert into product_variation (product_item_id ,size_id,quantity_in_stock) values($1,$2,$3)`;
+//   const { product_item, size_id, quantity_in_stock } = req.body;
+//   const validation= handlerFactory.missing('product variation ',[{name:'product item',value:product_item},{name:'quantity in stock',value:quantity_in_stock}])
+//   if(validation.length!==0){return next(new AppError(validation,401))}
+//   const product_variation = (
+//     await client.query(sql, [product_item, size_id, quantity_in_stock])
+//   ).rows[0];
+//   await client.query('COMMIT')
+//   res.status(200).json({
+//     status: "success",
+//     product_variation,
+//   });
+// });
 exports.addRealtedProducts=catchAsync(async (req,res,next)=>{
   const {client}=req; 
   const {product_id,related_product_id}=req.body
@@ -178,7 +179,7 @@ exports.resizeProductPhoto=catchAsync (async (req,res,next)=>{
 
 exports.addProductAttribute=catchAsync(async (req,res,next)=>{
     const {client}=req; 
-    const validation= handlerFactory.missing('product attribute ',[{name:'product item',value:req.body.product_id},{name:'attribute option',value:req.body.attribute_option}])
+    const validation= handlerFactory.missing('product attribute ',[{name:'product id',value:req.body.product_id},{name:'attribute option',value:req.body.attribute_option}])
     if(validation.length!==0){return next(new AppError(validation,401))}
      const sql=`insert into product_attribute (product_id,attribute_option) values($1,$2)`;
     const product_attribute=(await client.query(sql,[req.body.product_id,req.body.attribute_option])).rows[0]
@@ -239,11 +240,11 @@ exports.getAllProductAttribute=handlerFactory.getAll('product_attribute')
 exports.deleteoneProductAttribute=handlerFactory.deleteOne('product_attribute');
 exports.updateOneProductAttribute=handlerFactory.updateOne('product_attribute');
 exports.updateAllProductAttribute=handlerFactory.updateAll('product_attribute');
-exports.getOneProductVariation=handlerFactory.getOne('product_variation');
-exports.getAllProductVariation=handlerFactory.getAll('product_variation')
-exports.deleteoneProductVariation=handlerFactory.deleteOne('product_variation');
-exports.updateOneProductVariation=handlerFactory.updateOne('product_variation');
-exports.updateAllProductVariation=handlerFactory.updateAll('product_variation');
+// exports.getOneProductVariation=handlerFactory.getOne('product_variation');
+// exports.getAllProductVariation=handlerFactory.getAll('product_variation')
+// exports.deleteoneProductVariation=handlerFactory.deleteOne('product_variation');
+// exports.updateOneProductVariation=handlerFactory.updateOne('product_variation');
+// exports.updateAllProductVariation=handlerFactory.updateAll('product_variation');
 exports.getOneProductImage=handlerFactory.getOne('product_image');
 exports.getAllProductImage=handlerFactory.getAll('product_image')
 exports.deleteoneProductImage=handlerFactory.deleteOne('product_image');

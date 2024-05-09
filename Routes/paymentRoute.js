@@ -3,13 +3,14 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../Controllers/authController");
 const orderController=require('../Controllers/orderController');
+const purchaseController=require('../Controllers/purchaseController')
 router.use(authController.protected)
 // router.post('/addUserPaymentMethod',authController.restrictedto('user'),paymentController.addUserPaymentMethod)
 // router.post('/deleteMyPaymentMethod/:id',authController.restrictedto('user'),paymentController.deleteMyPaymentMethod)
 // router.post('/updateMyPaymentMethod/:id',authController.restrictedto('user'),paymentController.updateMyPaymentMethod)
-router.post('/payProductWithStripe',orderController.getProductPrice,orderController.addOrder,authController.restrictedto('user'),paymentController.stripePayment,orderController.updateOrder)
-router.post('/payProductWithStripe',orderController.getCartProductsPrice,orderController.addOrder,authController.restrictedto('user'),paymentController.stripePayment,orderController.updateOrder)
-
+router.post('/payProductWithStripe',authController.restrictedto('user'),orderController.getProductPrice,orderController.addOrder,paymentController.stripePayment,orderController.updateOrder)
+router.post('/payCartProductsWithStripe',authController.restrictedto('user'),orderController.getCartProductsPrice,orderController.addOrder,orderController.addOrderProduct,purchaseController.checkStock,paymentController.stripePayment,orderController.updateOrder,purchaseController.afterPayment)
+router.post('/cancelOrRefund',paymentController.cancelOrRefund,orderController.updateOrder)
 // router.use(authController.restrictedto('admin'))
 // router.
 // post('/addPaymentMethod',paymentController.addpaymentMethod)

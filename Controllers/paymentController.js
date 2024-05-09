@@ -1,6 +1,8 @@
 const catchAsync = require("./../Utils/catchAsync");
 const handlerFactory=require('./handlerFactory')
-const orderController=require('.//orderController')
+const orderController=require('.//orderController');
+const { result } = require("lodash");
+const AppError = require("../Utils/appError");
 const stripe=require('stripe')(process.env.STRIPE_API_KEY)
 // exports.addpaymentMethod = catchAsync(async (req, res, next) => {
 //   const { client } = req;
@@ -17,13 +19,39 @@ const stripe=require('stripe')(process.env.STRIPE_API_KEY)
 //   });
 // });
 
+exports.cancelOrRefund=catchAsync(async (req,res,next)=>{
+  const {order}=req.body
+  const{ payment_intent_id}=order
+  const paymentIntent= await stripe.paymentIntents.retrieve(payment_intent_id);
+  let result;
+  if (paymentIntent.status === 'succeeded'||order.status==='delivered'||order.status==='shipped') {
+    // Payment was successful, initiate a refund if needed
+    const refund = await stripe.refunds.create({
+      payment_intent: payment_intent_id,
+      amount: order.order_total, // Amount in cents (if partial refund)
+    });
+    result=refund
+    req.body.orderStatus='refunded'
+  } else if(paymentIntent.status === 'requires_capture'||order.status==='pending'||order.status=='processing'){
+    // Payment is pending, cancel the PaymentIntent
+    
+    const canceledPaymentIntent = await stripe.paymentIntents.cancel('pi_Aabcxyz01aDfoo');
+    result=canceledPaymentIntent
+    req.body.orderStatus='cancelled'
+
+  } 
+  if(!result){
+    next(new AppError('the order transaction is already failed',302))
+  }
+  next();
+})
 
 exports.stripePayment=catchAsync(async (req,res,next)=>{
 
-  const {currency,token,amount,shipping_method_id,order_date}=req.body
+  const {currency,token,totalPrice,shipping_method_id,order_date}=req.body
   // const {amount}=req.shopOrder
   const {email,userName}=req.user
-  console.log(email);
+  //console.log(email);
   const paymentMethod = await stripe.paymentMethods.create({
     type: 'card',
     card: {
@@ -31,7 +59,7 @@ exports.stripePayment=catchAsync(async (req,res,next)=>{
     },
   });
   const paymentIntent=await stripe.paymentIntents.create({
-    amount:amount*100,
+    amount:totalPrice*100,
     currency,
 //payment_method_types:['pm_card_visa'],
     payment_method:paymentMethod.id,
@@ -43,11 +71,10 @@ exports.stripePayment=catchAsync(async (req,res,next)=>{
   // }
   return_url:'https://www.youtube.com/'
   })
-  console.log(paymentIntent.status);
-  req.body.order_date=order_date;
-  req.body.shipping_method_id=shipping_method_id;
-  req.body.order_total=amount;
+  //console.log(paymentIntent.id,paymentIntent);
   req.body.entity='status'
+  req.body.paymentIntentId=paymentIntent.id
+//  req.body.chargeId=1
   req.body.orderStatus=paymentIntent.status
   next();
 })

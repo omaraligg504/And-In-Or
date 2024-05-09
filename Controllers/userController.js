@@ -83,6 +83,7 @@ exports.deleteOneUser = catchAsync(async (req, res, next) => {
   await client.query("COMMIT");
   res.status(200).json({
     status: "success",
+    messege:'account deleted'
   });
 });
 exports.getMe=catchAsync(async (req,res,next)=>{
@@ -102,7 +103,7 @@ exports.deleteMe=catchAsync(async (req,res,next)=>{
     messege:'Account deleted'
   })
 })
-exports.updateUserName=catchAsync(async (req,res,next)=>{
+exports.updateMyUserName=catchAsync(async (req,res,next)=>{
   const {client}=req;
   const sql=`Update users set username=$1 where users.id=$2` 
   await client.query(sql,[req.body.username,req.user.id])
@@ -112,7 +113,7 @@ exports.updateUserName=catchAsync(async (req,res,next)=>{
     messege:'user name updated'
   })
 })
-exports.updatePhonenumber=catchAsync(async (req,res,next)=>{
+exports.updateMyPhonenumber=catchAsync(async (req,res,next)=>{
   const {client}=req;
   const sql=`Update users set phonenumber=$1 where users.id=$2` 
   await client.query(sql,[phonenumber,req.user.id])
@@ -157,9 +158,11 @@ exports.resizeUserPhoto=catchAsync (async (req,res,next)=>{
 })  
 
 
+exports.deleteOneAddress=handlerFactory.deleteOne('address')
+// exports.getOneUserPaymentMethod=handlerFactory.getOne('user_payment_method');
+// exports.getAllUserPaymentMethod=handlerFactory.getAll('user_payment_method')
+// exports.deleteoneUserPaymentMethod=handlerFactory.deleteOne('user_payment_method');
+// exports.updateOneUserPaymentMethod=handlerFactory.updateOne('user_payment_method');
+// exports.updateAllUserPaymentMethod=handlerFactory.updateAll('user_payment_method');
 
-exports.getOneUserPaymentMethod=handlerFactory.getOne('user_payment_method');
-exports.getAllUserPaymentMethod=handlerFactory.getAll('user_payment_method')
-exports.deleteoneUserPaymentMethod=handlerFactory.deleteOne('user_payment_method');
-exports.updateOneUserPaymentMethod=handlerFactory.updateOne('user_payment_method');
-exports.updateAllUserPaymentMethod=handlerFactory.updateAll('user_payment_method');
+//jdbc:postgresql://localhos:5432/Amazondb

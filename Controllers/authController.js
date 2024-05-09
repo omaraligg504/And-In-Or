@@ -358,21 +358,23 @@ exports.updateMyPassword = catchAsync(async function (req, res, next) {
   if (validation) {
     return next(new AppError(validation, 401));
   }
-  const user = await client.query(
+  console.log(req.user.id);
+  const user =( await client.query(
     `SELECT password,id FROM users WHERE users.id=${req.user.id}`
-  ).rows[0];
-
+  )).rows[0];
+  
+  //console.log(user);
   // 2) Check if POSTed current password is correct
-  if (!(await correctPassword(req.body.passwordCurrent, user.password))) {
+  if (!(await correctPassword(req.body.currentPassword, user.password))) {
     return next(new AppError("Your current password is wrong.", 401));
   }
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await bcrypt.hash(req.body.newPassword, 12);
 
   // 3) If so, update password
   user.password = passwordHash;
-
+  console.log(passwordHash);
   await client.query(
-    `UPDATE users set password = ${passwordHash}  WHERE users.id=${user.id}`
+    `UPDATE users set password = ('${passwordHash}')  WHERE users.id=${user.id}`
   );
   await client.query("COMMIT");
   // User.findByIdAndUpdate will NOT work as intended!
@@ -384,7 +386,7 @@ exports.updateMyPassword = catchAsync(async function (req, res, next) {
 exports.updateMyEmail=catchAsync(async (req,res,next)=>{
   const newEmail=req.body.newEmail
   if (!validator.isEmail(newEmail)) {
-    return "please enter a valid email";
+    return next(new AppError("please enter a valid email",404));
   }
   const {client}=req; 
    const sql=`UPDATE users set email = $1  WHERE users.id=$2`;
@@ -392,8 +394,8 @@ exports.updateMyEmail=catchAsync(async (req,res,next)=>{
   await client.query('COMMIT')
   res.status(200).json({
   status:'success',
-  updateEmail
+  messege:"email updated successfully"
   })
 })
-exports.updateMyPhoneNumber=handerFactory.updateMyOne('users');
+
 

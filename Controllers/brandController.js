@@ -9,7 +9,7 @@ exports.addbrand=catchAsync(async (req,res,next)=>{
     //console.log(name,description);
     const validation= handlerFactory.missing('brand ',[{name:'name',value:name},{name:'description',value:description},{name:'provider id',value:providerId}])
     if(validation.length!==0){return next(new AppError(validation,401))}
-    const sql=`insert into brand  (name ,description,provider_id ) values($1,$2) returning id`;
+    const sql=`insert into brand  (name ,description,provider_id ) values($1,$2,$3) returning id`;
     const brand=(await client.query(sql,[name,description,providerId])).rows[0]
     await client.query('COMMIT')
     res.status(200).json({

@@ -20,11 +20,11 @@ router.delete('/deleteme',userController.deleteMe)
 router.get('/forgetpassword',authController.forgetPassword)
 router.post('/resetpassword/:token',authController.resetPassword)
 router.post('/addaddress',userController.addAddress)
-router.post('/updateMyPassword',authController.updateMyPassword)
-router.post('/updateMyEmail',authController.updateMyEmail)
-router.post('/updateMyPhoneNumber',authController.updateMyPhoneNumber)
+router.patch('/updateMyPassword',authController.updateMyPassword)
+router.patch('/updateMyUserName',userController.updateMyUserName)
+router.patch('/updateMyEmail',authController.updateMyEmail)
+router.patch('/updateMyPhoneNumber',userController.updateMyPhonenumber)
 router.patch('/updateUserPhoto',userController.uploadUserPhoto,userController.resizeUserPhoto)
-
 
 
 
@@ -36,17 +36,19 @@ router.patch('/updateUserPhoto',userController.uploadUserPhoto,userController.re
 
 router.use( authController.restrictedto('admin'));
 router
-  .route("/")
-  .get(userController.getAllUsers)
+.route("/")
+.get(userController.getAllUsers)
 
-  router
+router.delete('/deleteAddress/:id',userController.deleteOneAddress)
+router.delete('/deleteUser/:id',userController.deleteOneUser)
+router
 .route('/makeAdmin/:id')
 .patch(userController.makeAdmin)
 router
-  .route("/:id")
-  .get(userController.getOneUser)
-  .delete(userController.deleteOneUser)
+.route("/:id")
+.get(userController.getOneUser)
+.delete(userController.deleteOneUser)
 
 
 
-  module.exports = router;
+module.exports = router;
