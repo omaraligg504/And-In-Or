@@ -170,6 +170,8 @@ exports.updateOrder=
     })
   })
 
+  
+
 exports.getOneOrder=handlerFactory.getOne('orders');
 exports.getAllOrder=handlerFactory.getAll('orders')
 exports.deleteoneOrder=handlerFactory.deleteOne('orders');
