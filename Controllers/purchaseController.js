@@ -3,13 +3,15 @@ const catchAsync=require('../Utils/catchAsync')
 const orderController=require('./orderController')
 exports.afterPayment=catchAsync(async (req,res,next)=>{
     //console.log(req.body.orderStatus);
+    const {client}=req
+    console.log(req.body.orderStatus);
     if(req.body.orderStatus==='succeeded'){
-        const {client}=req; 
+        //const {client}=req; 
         const sql=`SELECT update_stock_for_order($1)`;
-        //console.log(req.body.order);
        const result=(await client.query(sql,[req.body.order.id])).rows[0]
-        await increaseSales(client,req.user.id,req.body.order.id)
+        await update_sales(client,req.user.id,req.body.order.id)
        await client.query('COMMIT')
+
        res.status(200).json({
        status:'success',
        messege:'successfully purchased',
@@ -17,45 +19,31 @@ exports.afterPayment=catchAsync(async (req,res,next)=>{
        order:req.body.order
        })
     }
-    else if(req.body.orderStatus==='failed'||req.body.orderStatus==='cancelled'){
+    else if(req.body.orderStatus==='failed'||req.body.orderStatus==='cancelled'||req.body.orderStatus==='refunded'){
+        if(req.body.orderStatus!=='failed')await client.query('select update_product_sales($1)',[req.body.order.id])      
         res.status(200).json({
-        status:'failed',
-        messege:'order failed'
+        status:req.body.orderStatus,
+        messege:'order '+req.body.orderStatus
         })
     }
     else if(req.body.orderStatus==='processing'||req.body.orderStatus==='pending'){
+        // if(req.body.orderStatus==='refunded')await client.query('select update_product_sales($1)',[req.body.order.id])      
+
         res.status(200).json({
         status:'processing',
         messege:'order in process'
         })
     }
 })
-const increaseSales=async (client,user_id,id)=>{
+
+const update_sales=async (client,user_id,id)=>{
     
-    try{const orderProducts=await orderController.myOrderProducts(client,user_id,id);
-    const  productIds=new Map()
-    //console.log(orderProducts);
-    for (const x of orderProducts){
-        
-         const sql=`select product_id from product_item where id=$1`;
-        //console.log(x.product_item_id);
-        const productIDs=(await client.query(sql,[x.product_item_id])).rows[0]
-        //productIds.add(productIDs.product_id)
-        if(productIds.has(productIDs.product_id))
-            productIds.set(productIDs.product_id,productIds.get(productIDs.product_id)+x.quantity)
-        else productIds.set(productIDs.product_id,x.quantity)
-        //console.log('product_id '+productIDs.product_id)
-    }
-    //console.log(productIds);
-    for( const  [x,val] of productIds){
-        //const {client}=req; 
-        console.log(x);
-         const sql=`update product set sold =(sold+$1) where id=$2 returning sold`;
-        const result=(await client.query(sql,[val,x])).rows[0]
-        //console.log(result);
-    }
+    try{
+       // console.log(id);
+    await client.query('select update_product_sales($1)',[Number(id)])
+
     await client.query('COMMIT')
-}catch(err){
+    }catch(err){
         throw new AppError(err,302);
     }
 }

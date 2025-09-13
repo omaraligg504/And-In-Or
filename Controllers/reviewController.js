@@ -1,14 +1,14 @@
 const catchAsync = require("./../Utils/catchAsync");
 const handlerFactory=require('./handlerFactory')
-
+const AppError=require('./../Utils/appError')
 exports.addReview = catchAsync(async (req, res, next) => {
   const { client } = req;
-  const sql = `insert into reviews  (rating_value ,comment,user_id,shop_order_id,product_id) values($1,$2,$3,$4,$5) returning id`;
-  const { rating_value, comment, shop_order_id ,productId} = req.body;
-  const validation= handlerFactory.missing('review ',[{name:'user id',value:req.user.id},{name:'product id',value:productId}])
+  const sql = `insert into reviews  (rating_value,comment,user_id,order_id,product_id) values($1,$2,$3,$4,$5) returning id`;
+  const { rating_value, comment, shop_order_id ,product_id} = req.body;
+  const validation= handlerFactory.missing('review ',[{name:'user id',value:req.user.id},{name:'product id',value:product_id}])
     if(validation.length!==0){return next(new AppError(validation,401))}
   const review = (
-    await client.query(sql, [rating_value, comment, req.user.id, shop_order_id,productId])
+    await client.query(sql, [rating_value, comment, req.user.id, shop_order_id,product_id])
   ).rows[0];
   await client.query("COMMIT");
   res.status(200).json({

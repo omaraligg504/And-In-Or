@@ -15,7 +15,7 @@ const signToken = function (id) {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = (user, statusCode,req, res,next,path) => {
   //console.log(user.rows[0].id);
 
   const token = signToken(user.id);
@@ -29,13 +29,17 @@ const createSendToken = (user, statusCode, res) => {
   //console.log(token);
   if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
   res.cookie("jwt", token, cookieOptions);
-  res.status(statusCode).json({
-    status: "success",
-    token,
-    data: {
-      user,
+  req.body.user=user;
+  req.body.token=token ;
+  req.user=user;
+  console.log(user,token);
+  if (!path){res.status(200).json({
+  status:'success',
+    data:{user,
     },
-  });
+    token
+  })}
+  else next();
 };
 const checkPassword = (password) => {
   const schema = new passwordValidator();
@@ -138,19 +142,22 @@ exports.signup = catchAsync(async (req, res, next) => {
   ]);
   //console.log(newUser);
   // Commit the transaction
-  await client.query("COMMIT");
+  //await client.query("COMMIT");
 
   //console.log(newUser.rows[0]); // Log the inserted user
 
   // Send response with token
-  createSendToken(newUser.rows[0], 201, res);
+  createSendToken(newUser.rows[0], 201, req,res,next,1);
 });
 exports.logout = (req, res) => {
   res.cookie("jwt", "loggedout", {
     expires: new Date(Date.now()),
     httpOnly: true,
   });
-  res.status(200).json({ status: "success" });
+
+  req.user=undefined
+  req.token=undefined
+  res.status(200).header('x-clear-jwt', 'true').json({ status: "success" });
 };
 
 exports.login = catchAsync(async function (req, res, next) {
@@ -169,7 +176,7 @@ exports.login = catchAsync(async function (req, res, next) {
     return next(new AppError("Ivalid password or email", 401));
   }
 
-  createSendToken(user, 201, res);
+  createSendToken(user, 201, req,res,next);
 });
 const correctPassword = async function (candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
@@ -180,6 +187,7 @@ exports.protected = catchAsync(async (req, res, next) => {
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
+    console.log(req.headers.authorization);
     token = req.headers.authorization.split(" ")[1];
   } else if (req.headers.cookie) {
     token = req.headers.cookie;
@@ -319,9 +327,10 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   const previousDate = new Date(currentDate.getTime() - 1000);
   const timestamp = previousDate.toISOString();
+  console.log(hashedtoken);
   const sql =
     "select * from users where passwordresettoken=$1 and passwordresetexpires > $2 ";
-  const user = (await client.query(sql, [hashedtoken, Date.now()])).rows[0];
+  const user = (await client.query(sql, [req.params.token, Date.now()])).rows[0];
   if (!user) {
     return next(new AppError("Invalid or expired token", 400));
   }
@@ -380,7 +389,7 @@ exports.updateMyPassword = catchAsync(async function (req, res, next) {
   // User.findByIdAndUpdate will NOT work as intended!
 
   // 4) Log user in, send JWT
-  createSendToken(user, 200, res);
+  createSendToken(user, 200, req,res,next);
 });
 
 exports.updateMyEmail=catchAsync(async (req,res,next)=>{

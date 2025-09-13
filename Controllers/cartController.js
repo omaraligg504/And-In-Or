@@ -4,15 +4,22 @@ const handlerFactory = require("./handlerFactory");
 const {missing}=handlerFactory
 exports.addCart = catchAsync(async (req, res, next) => {
   const { client } = req;
-  const validation= missing('cart',[{name:'user_id',value:req.user.id}])
+  const user=req.body.user;
+  console.log(user);
+  const token=req.body.token;
+  const validation= missing('cart',[{name:'user_id',value:user.id}])
   //console.log(validation);
   if(validation.length!==0){return next(new AppError(validation,401))}
   const sql = `insert into cart  (user_id ) values($1) returning id`;
-  const cart = (await client.query(sql, [req.user.id])).rows[0];
+  const cart = (await client.query(sql, [user.id])).rows[0];
   await client.query("COMMIT");
   res.status(200).json({
     status: "success",
-    cart,
+    token,
+    data: {
+      user,
+      cart
+    },
   });
 });
 exports.addCartItem = catchAsync(async (req, res, next) => {
@@ -61,7 +68,10 @@ exports.deleteAllMyCartItems = catchAsync(async (req, res, next) => {
   const { client } = req;
   const {info} =req
   const cartitemsql = `delete from cart_item where cart_id=$1`;
-  const cartitemsdelete = (await client.query(cartitemsql, [req.params.cartId])).rows[0];
+  const cartquery=`select * from cart where user_id=$1`;
+  const cart =(await client.query(cartquery,[req.user.id||req.body.user.id])).rows[0]
+  const cartitemsdelete = (await client.query(cartitemsql, [cart.id])).rows[0];
+  console.log(cart);
   await client.query('COMMIT')
   res.status(200).json({
   status:'success',
@@ -71,7 +81,7 @@ exports.deleteAllMyCartItems = catchAsync(async (req, res, next) => {
 });
 exports.getMyCartItems = catchAsync(async (req, res, next) => {
   const { client } = req;
-  const myCartItems = await getCartItems(client, req.user.id);
+  const myCartItems = await this.getCartItems(client, req.user.id);
   res.status(200).json({
     status: 'success',
     myCartItems
@@ -85,9 +95,23 @@ exports.getCartItems = async (client, userId) => {
   const myCartItems = (await client.query(sql, [cartId])).rows;
   return myCartItems;
 };
-
-exports.getOneCart_item = handlerFactory.getOne("cart_item");
-exports.getAllCart_item = handlerFactory.getAll("cart_item");
-exports.deleteoneCart_item = handlerFactory.deleteOne("cart_item");
-exports.updateOneCart_item = handlerFactory.updateOne("cart_item");
-exports.updateAllCart_item = handlerFactory.updateAll("cart_item");
+exports.deleteMyCartItem=  catchAsync(async (req, res, next) => {
+  const { client } = req;
+  const {info} =req
+  const cartitemsql = `delete from cart_item where cart_id=$1&&id=$2`;
+  const cartquery=`select * from cart where user_id=$1`;
+  const cart =(await client.query(cartquery,[req.user.id||req.body.user.id,req.params.id])).rows[0]
+  const cartitemsdelete = (await client.query(cartitemsql, [cart.id])).rows[0];
+  console.log(cart);
+  await client.query('COMMIT')
+  res.status(200).json({
+  status:'success',
+  cartitemsdelete,
+  info
+  })
+});
+exports.getOneCartItem = handlerFactory.getOne("cart_item");
+exports.getAllCartItem = handlerFactory.getAll("cart_item");
+exports.deleteoneCartItem = handlerFactory.deleteOne("cart_item");
+exports.updateOneCartItem = handlerFactory.updateOne("cart_item");
+exports.updateAllCartItem = handlerFactory.updateAll("cart_item");

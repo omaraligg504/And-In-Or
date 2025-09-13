@@ -21,6 +21,7 @@ const stripe=require('stripe')(process.env.STRIPE_API_KEY)
 
 exports.cancelOrRefund=catchAsync(async (req,res,next)=>{
   const {order}=req.body
+  //console.log(order);
   const{ payment_intent_id}=order
   const paymentIntent= await stripe.paymentIntents.retrieve(payment_intent_id);
   let result;
@@ -35,7 +36,7 @@ exports.cancelOrRefund=catchAsync(async (req,res,next)=>{
   } else if(paymentIntent.status === 'requires_capture'||order.status==='pending'||order.status=='processing'){
     // Payment is pending, cancel the PaymentIntent
     
-    const canceledPaymentIntent = await stripe.paymentIntents.cancel('pi_Aabcxyz01aDfoo');
+    const canceledPaymentIntent = await stripe.paymentIntents.cancel(paymentIntent.id);
     result=canceledPaymentIntent
     req.body.orderStatus='cancelled'
 
@@ -73,8 +74,9 @@ exports.stripePayment=catchAsync(async (req,res,next)=>{
   })
   //console.log(paymentIntent.id,paymentIntent);
   req.body.entity='status'
-  req.body.paymentIntentId=paymentIntent.id
+  //req.body.paymentIntentId=paymentIntent.id
 //  req.body.chargeId=1
+  req.body.order.payment_intent_id=paymentIntent.id
   req.body.orderStatus=paymentIntent.status
   next();
 })

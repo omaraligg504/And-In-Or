@@ -6,7 +6,7 @@ router.get('/getBrand/:id',brandController.getOneBrand)
 .get('/getAllBrands',brandController.getAllBrand)
 router.use(authController.protected,authController.restrictedto('provider'))
 router.
-post('/addbrand',brandController.addbrand)
+post('/addBrand',brandController.addbrand)
 
 .delete('/deleteBrand/:id',brandController.deleteoneBrand)
 .patch('/updateBrand/:id',brandController.updateOneBrand)

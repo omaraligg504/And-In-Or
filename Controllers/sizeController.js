@@ -19,12 +19,11 @@ exports.addSizeCategory = catchAsync(async (req, res, next) => {
 
 exports.addsize=catchAsync(async (req,res,next)=>{
     const {client}=req; 
-    const sizesql=`select id from size_category where name = $1`
-    const size_category=(await client.query(sizesql,[req.body.size_category_id])).rows[0]
-    const validation= handlerFactory.missing('size ',[{name:'name',value:req.body.name},{name:'sorting order',value:req.body.sort_order},{name :'size category',value:size_category}])
+    
+    const validation= handlerFactory.missing('size ',[{name:'name',value:req.body.name},{name:'sorting order',value:req.body.sort_order},{name :'size category',value:req.body.size_category_id}])
     if(validation.length!==0){return next(new AppError(validation,401))}
      const sql=`insert into size  (name , sort_order,size_category_id) values($1,$2,$3) returning id`;
-    const size=(await client.query(sql,[req.body.name,req.body.sort_order,size_category.id])).rows[0]
+    const size=(await client.query(sql,[req.body.name,req.body.sort_order,req.body.size_category_id])).rows[0]
     await client.query('COMMIT')
     res.status(200).json({
     status:'success',

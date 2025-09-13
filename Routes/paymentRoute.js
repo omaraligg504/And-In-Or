@@ -10,7 +10,7 @@ router.use(authController.protected)
 // router.post('/updateMyPaymentMethod/:id',authController.restrictedto('user'),paymentController.updateMyPaymentMethod)
 router.post('/payProductWithStripe',authController.restrictedto('user'),orderController.getProductPrice,orderController.addOrder,paymentController.stripePayment,orderController.updateOrder)
 router.post('/payCartProductsWithStripe',authController.restrictedto('user'),orderController.getCartProductsPrice,orderController.addOrder,orderController.addOrderProduct,purchaseController.checkStock,paymentController.stripePayment,orderController.updateOrder,purchaseController.afterPayment)
-router.post('/cancelOrRefund',paymentController.cancelOrRefund,orderController.updateOrder)
+router.post('/cancelOrRefund',paymentController.cancelOrRefund,orderController.updateOrder,purchaseController.afterPayment)
 // router.use(authController.restrictedto('admin'))
 // router.
 // post('/addPaymentMethod',paymentController.addpaymentMethod)

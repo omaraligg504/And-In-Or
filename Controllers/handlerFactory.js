@@ -9,10 +9,11 @@ const pool = require("./../db");
 //       results
 //     });
 //   });
-  exports.getAll= model=>catchAsync(async (req, res, next) => {
+  exports.getAll= (model)=>catchAsync(async (req, res, next) => {
     const {client}=req
-     const sql=`select * from $1`;
-    const results=(await client.query(sql,[model])).rows[0]
+     const sql=`select * from ${model}`;
+     console.log(model);
+    const results=(await client.query(sql)).rows
     res.status(200).json({
       status: "success",
       results
@@ -58,6 +59,7 @@ exports.deleteOne=(model)=>
     const {client}=req
     const sql=`delete  from ${model} where id = $1`
     const results=(await client.query(sql,[id])).rows[0]
+    await client.query('COMMIT')
     res.status(200).json({
       status: "success",
       results
@@ -70,6 +72,7 @@ exports.deleteOne=(model)=>
     const {client}=req
     const sql=`delete  from ${model} where ${first}_id = $1 and ${second}_id = $2 `
     const results=(await client.query(sql,[id,sid])).rows[0]
+    await client.query('COMMIT')
     res.status(200).json({
       status: "success",
       results
@@ -93,6 +96,7 @@ exports.deleteMyOne=(model)=>
     const {client}=req
     const sql=`delete  from ${model} where user_id = $1`
     const results=(await client.query(sql,[id])).rows[0]
+    await client.query('COMMIT')
     res.status(200).json({
       status: "success",
       results
@@ -104,6 +108,7 @@ exports.deleteAllMy=(model)=>
     const {client}=req
     const sql=`delete  from ${model} where user_id = $1`
     const results=(await client.query(sql,[id])).rows[0]
+    await client.query('COMMIT')
     res.status(200).json({
       status: "success",
       results
@@ -118,8 +123,9 @@ exports.updateOne=(model)=>
     const value=req.body.value
     const {client}=req
     console.log(params,value);
-    const sql=`update  ${model} set ${params} = ${value}  where id = $1`
+    const sql=`update  ${model} set ${params} = '${value}'  where id = $1`
     const results=(await client.query(sql,[id])).rows[0]
+    await client.query('COMMIT')
     res.status(200).json({
       status: "success",
       results
@@ -132,7 +138,7 @@ exports.updateOne=(model)=>
     const value=req.body.value
     const {client}=req
     const sid=req.params.sid
-    const sql=`update  ${model} set ${params} = ${value}  where id = ${first}_id = $1 and ${second}_id =$2`
+    const sql=`update  ${model} set ${params} = '${value}'  where id = ${first}_id = $1 and ${second}_id =$2`
     const results=(await client.query(sql,[id,sid])).rows[0]
     res.status(200).json({
       status: "success",
@@ -145,7 +151,7 @@ exports.updateMyOne=(model)=>
     const params=req.body.entity
     const value=req.body.value
     const {client}=req  
-    const sql=`update  ${model} set ${params} = ${value}  where user_id = $1`
+    const sql=`update  ${model} set ${params} = '${value}'  where user_id = $1`
     const results=(await client.query(sql,[id])).rows[0]
     res.status(200).json({
       status: "success",
@@ -160,9 +166,10 @@ exports.updateAll=(model)=>
     const params=req.body.entity
     const value=req.body.value
     const {client}=req
-
-    const results=(await client.query(`update  ${model} set ${params} = ${value}`)).rows[0]
-    res.send(200).json({
+    const sql=`update  ${model} set ${params} = '${value}'`
+    const results=(await client.query(sql)).rows[0]
+    await client.query('COMMIT')
+    res.status(200).json({
       status: "success",
       results
     });
@@ -182,3 +189,4 @@ exports.missing=(model, creditials)=>{
     return model + errorMessages.join(" and ") + ".";
   return '';
 }
+

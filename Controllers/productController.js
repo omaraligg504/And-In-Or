@@ -101,6 +101,7 @@ exports.addRealtedProducts=catchAsync(async (req,res,next)=>{
   const {product_id,related_product_id}=req.body
    const sql=`insert into related_products (product_id,related_product_id) values($1,$2)`;
   const relation=(await client.query(sql,[product_id,related_product_id])).rows[0]
+  await client.query('COMMIT')
   res.status(200).json({
   status:'success',
   relation
@@ -109,13 +110,13 @@ exports.addRealtedProducts=catchAsync(async (req,res,next)=>{
 exports.getRelatedProducts=catchAsync(async (req,res,next)=>{
   const {client}=req; 
    const sql=`SELECT DISTINCT p.*
-   FROM products p
+   FROM product p
    LEFT JOIN related_products rp1 ON p.id = rp1.related_product_id
    LEFT JOIN related_products rp2 ON p.id = rp2.product_id
    WHERE rp1.product_id = $1 OR rp2.related_product_id = $1;
    `;
    const product_id=req.params.id
-  const related=(await client.query(sql,[product_id])).rows[0]
+  const related=(await client.query(sql,[product_id])).rows
   res.status(200).json({
   status:'success',
   related
@@ -149,11 +150,14 @@ const upload = multer({
 });
 exports.uploadProductItemPhoto=upload.array('images',6)
 exports.resizeProductPhoto=catchAsync (async (req,res,next)=>{
-  console.log(req.files.length);
-  if(!req.files)return next(new AppError('there is not any photo uploaded',300));
-  if(req.files.length>5)return next(new AppError('you can upload 5 images only for product item'))
-
+  //console.log(req.files.length);
   const {client}=req;
+  const sql =`select count(*) from product_image where product_item_id=$1`
+  const num=(await client.query(sql,[req.params.id])).rows[0].count
+  if(!req.files)return next(new AppError('there is not any photo uploaded',300));
+  console.log(num);
+  if(num+req.files.length>5)return next(new AppError('you can upload 5 images only for product item '))
+  
   await Promise.all(req.files.map(async(element,i) => {
   
     const filename=`productItem-${req.params.id}-${Date.now()}-${i+1}.jpeg`
@@ -167,21 +171,20 @@ exports.resizeProductPhoto=catchAsync (async (req,res,next)=>{
     const sql=`insert into product_image (product_item_id,image_filename) values($1,$2)`;
     // const validation= handlerFactory.missing('product image ',[{name:'product_id',value:req.user.product_item_id},{name:'image file name',value:req.body.image_filename}])
     //if(validation.length!==0){return next(new AppError(validation,401))}
-   const image=(await client.query(sql,[req.params.id,filename])).rows[0]
+   await client.query(sql,[req.params.id,filename])
   }))
   await client.query('COMMIT')
   res.status(200).json({
   stauts:'success',
   messege:'photos updated successfully'
-  })
-})  
+  })})
 //sadklasd
 
 exports.addProductAttribute=catchAsync(async (req,res,next)=>{
     const {client}=req; 
     const validation= handlerFactory.missing('product attribute ',[{name:'product id',value:req.body.product_id},{name:'attribute option',value:req.body.attribute_option}])
     if(validation.length!==0){return next(new AppError(validation,401))}
-     const sql=`insert into product_attribute (product_id,attribute_option) values($1,$2)`;
+     const sql=`insert into product_attribute (product_id,attribute_option_id) values($1,$2)`;
     const product_attribute=(await client.query(sql,[req.body.product_id,req.body.attribute_option])).rows[0]
     await client.query('COMMIT')
     res.status(200).json({
@@ -217,7 +220,7 @@ ORDER BY
 exports.getOneProductCategory=handlerFactory.getOne('product_category');
 exports.getAllProductCategory=handlerFactory.getAll('product_category')
 exports.deleteoneProductCategory=handlerFactory.deleteOne('product_category');
-exports.deleteProductRelation=handlerFactory.deleteOne('related_products');
+exports.deleteProductRelation=handlerFactory.deleteOneForOne('related_products','product','related_product');
 exports.updateOneProductCategory=handlerFactory.updateOne('product_category');
 exports.updateAllProductCategory=handlerFactory.updateAll('product_category');
 exports.getOneProduct=handlerFactory.getOne('product');
@@ -225,19 +228,29 @@ exports.getAllProduct=handlerFactory.getAll('product')
 exports.deleteoneProduct=handlerFactory.deleteOne('product');
 exports.updateOneProduct=handlerFactory.updateOne('product');
 exports.updateAllProduct=handlerFactory.updateAll('product');
-exports.getOneProductpromtion=handlerFactory.getOne('product_promtion');
-exports.getAllProductpromtion=handlerFactory.getAll('product_promtion')
-exports.deleteoneProductpromtion=handlerFactory.deleteOne('product_promtion');
-exports.updateOneProductpromtion=handlerFactory.updateOne('product_promtion');
-exports.updateAllProductpromtion=handlerFactory.updateAll('product_promtion');
+// exports.getOneProductpromtion=handlerFactory.getOne('product_promtion');
+// exports.getAllProductpromtion=handlerFactory.getAll('product_promtion')
+// exports.deleteoneProductpromtion=handlerFactory.deleteOne('product_promtion');
+// exports.updateOneProductpromtion=handlerFactory.updateOne('product_promtion');
+// exports.updateAllProductpromtion=handlerFactory.updateAll('product_promtion');
 exports.getOneProductItem=handlerFactory.getOne('product_item');
 exports.getAllProductItem=handlerFactory.getAll('product_item')
 exports.deleteoneProductItem=handlerFactory.deleteOne('product_item');
 exports.updateOneProductItem=handlerFactory.updateOne('product_item');
 exports.updateAllProductItem=handlerFactory.updateAll('product_item');
 exports.getOneProductAttribute=handlerFactory.getOne('product_attribute');
-exports.getAllProductAttribute=handlerFactory.getAll('product_attribute')
-exports.deleteoneProductAttribute=handlerFactory.deleteOne('product_attribute');
+exports.getAllProductAttribute=
+  catchAsync(async (req,res,next)=>{
+    const id=req.params.id
+    const {client}=req
+    const sql=`select * from product_attribute where product_id = $1`
+    const results=(await client.query(sql,[id])).rows
+    res.status(200).json({
+      status: "success",
+      results
+    });
+  })
+exports.deleteoneProductAttribute=handlerFactory.deleteOneForOne('product_attribute','product','attribute_option');
 exports.updateOneProductAttribute=handlerFactory.updateOne('product_attribute');
 exports.updateAllProductAttribute=handlerFactory.updateAll('product_attribute');
 // exports.getOneProductVariation=handlerFactory.getOne('product_variation');
@@ -248,5 +261,5 @@ exports.updateAllProductAttribute=handlerFactory.updateAll('product_attribute');
 exports.getOneProductImage=handlerFactory.getOne('product_image');
 exports.getAllProductImage=handlerFactory.getAll('product_image')
 exports.deleteoneProductImage=handlerFactory.deleteOne('product_image');
-exports.updateOneProductImage=handlerFactory.updateOne('product_image');
-exports.updateAllProductImage=handlerFactory.updateAll('product_image');
+// exports.updateOneProductImage=handlerFactory.updateOne('product_image');
+// exports.updateAllProductImage=handlerFactory.updateAll('product_image');

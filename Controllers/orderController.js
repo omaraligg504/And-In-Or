@@ -158,17 +158,16 @@ exports.updateOrder=
     const id=req.body.order.id
     const status=req.body.orderStatus
     const {client}=req
-    console.log(status,req.body.order.payment_intent_id,id);
+    //console.log(status,req.body.paymentIntentId,id);
     //console.log(params,value);
     const sql=`update  orders set status = ('${status}'), payment_intent_id= ($1)   where id = $2 returning *`
     const results=(await client.query(sql,[req.body.order.payment_intent_id,id])).rows[0]
     await client.query('COMMIT')
     req.body.order=results
-    res.status(200).json({
-    status:'success',
-    messege:"refunded"
-    })
+    // console.log(req.body.Order);
+    next();
   })
+
 
   
 
